@@ -1,0 +1,49 @@
+name: Build Evolution APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build Evolution
+        run: npm run build
+
+      - name: Create Android project
+        run: |
+          npm install -g @capacitor/cli
+          npm install @capacitor/core @capacitor/android
+          npx cap init Evolution com.evolution.app --web-dir dist
+          npx cap add android
+          npx cap copy android
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Build APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Evolution-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
